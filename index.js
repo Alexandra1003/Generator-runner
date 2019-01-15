@@ -12,15 +12,14 @@ function* gen() {
     const b = yield prom;
     const c = yield val;
     const d = yield val2;
-    console.log('console', a, b, c, d);
 }
 
 let iter = gen();
 
-function executor(iterator) {
+function runner(iterator) {
     let array = [];
 
-    function runner(iterator, value) {
+    function executor(iterator, value) {
         let next = iterator.next(value);
     
         if (!next.done) {
@@ -28,30 +27,27 @@ function executor(iterator) {
                 next.value.then(
                     data => {
                         array.push(data);
-                        runner(iterator, data);
+                        executor(iterator, data);
                     },
                     err => {
                         array.push(err);
-                        runner(iterator, err);
+                        executor(iterator, err);
                     }
                 );
             } else if (typeof next.value === 'function') {
                 array.push(next.value());
-                runner(iterator, next.value());
+                executor(iterator, next.value());
             } else {
                 array.push(next.value);
-                runner(iterator, next.value);
+                executor(iterator, next.value);
             }
         } else {
-            console.log('done:true!', array);
             return array;
-            /* return Promise.resolve(array); */
         }
     }
-    runner(iter);
+    executor(iter);
 
     return Promise.resolve(array);
 }
 
-let result = executor(iter);
-console.log('finall result', result);
+let result = runner(iter);
