@@ -1,8 +1,42 @@
+function runner(iterator) {
+    let array = [];
+
+    return new Promise((resolve, reject) => {
+        function executor(iterator, value) {
+            let next = iterator.next(value);
+
+            if (!next.done) {
+                if (next.value instanceof Promise) {
+                    next.value.then(
+                        data => {
+                            array.push(data);
+                            executor(iterator, data);
+                        },
+                        err => {
+                            array.push(err);
+                            executor(iterator, err);
+                        }
+                    );
+                } else if (typeof next.value === 'function') {
+                    array.push(next.value());
+                    executor(iterator, next.value());
+                } else {
+                    array.push(next.value);
+                    executor(iterator, next.value);
+                }
+            } else {
+                resolve(array);
+            }
+        }
+        executor(iter);
+    })
+}
+
 function sum(a, b) {
     return a + b;
 }
 const prom = new Promise(res => {
-    setTimeout(res, 5000, 10);
+    setTimeout(res, 1000, 10);
 })
 const val = 20;
 const val2 = { name: 'ivan' };
@@ -15,39 +49,5 @@ function* gen() {
 }
 
 let iter = gen();
-
-function runner(iterator) {
-    let array = [];
-
-    function executor(iterator, value) {
-        let next = iterator.next(value);
-    
-        if (!next.done) {
-            if (next.value instanceof Promise) {
-                next.value.then(
-                    data => {
-                        array.push(data);
-                        executor(iterator, data);
-                    },
-                    err => {
-                        array.push(err);
-                        executor(iterator, err);
-                    }
-                );
-            } else if (typeof next.value === 'function') {
-                array.push(next.value());
-                executor(iterator, next.value());
-            } else {
-                array.push(next.value);
-                executor(iterator, next.value);
-            }
-        } else {
-            return array;
-        }
-    }
-    executor(iter);
-
-    return Promise.resolve(array);
-}
 
 let result = runner(iter);
