@@ -28,7 +28,7 @@ function runner(iterator) {
                 resolve(array);
             }
         }
-        executor(iter);
+        executor(iterator);
     })
 }
 
