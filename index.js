@@ -2,12 +2,15 @@ function runner(iterator) {
     let array = [];
 
     return new Promise((resolve, reject) => {
-        function executor(iterator, value) {
-            let next = iterator.next(value);
-
-            if (!next.done) {
-                if (next.value instanceof Promise) {
-                    next.value.then(
+        function executor(iterator, yieldValue) {
+            const next = iterator.next(yieldValue);
+            const { done, value } = next;
+            if (done) {
+                return resolve(array);
+            }
+            if (!done) {
+                if (value instanceof Promise) {
+                    value.then(
                         data => {
                             array.push(data);
                             executor(iterator, data);
@@ -17,37 +20,46 @@ function runner(iterator) {
                             executor(iterator, err);
                         }
                     );
-                } else if (typeof next.value === 'function') {
-                    array.push(next.value());
-                    executor(iterator, next.value());
+                } else if (typeof value === 'function') {
+                    const resultValue = value();
+                    array.push(resultValue);
+                    executor(iterator, resultValue);
                 } else {
-                    array.push(next.value);
-                    executor(iterator, next.value);
+                    array.push(value);
+                    executor(iterator, value);
                 }
-            } else {
-                resolve(array);
             }
         }
         executor(iterator);
     })
 }
 
-function sum(a, b) {
-    return a + b;
-}
-const prom = new Promise(res => {
-    setTimeout(res, 1000, 10);
-})
-const val = 20;
-const val2 = { name: 'ivan' };
+//Example to check
 
-function* gen() {
-    const a = yield () => sum(1, 2);
-    const b = yield prom;
-    const c = yield val;
-    const d = yield val2;
-}
-
-let iter = gen();
-
-let result = runner(iter);
+function sum() {
+    console.log(1);
+    return [].reduce.call(arguments, (acc, el) => acc+=el);
+  }
+  
+  const prom = x => new Promise(res => {
+    console.log(2);
+    setTimeout(res,2000,x);
+  })
+  
+  function pow() {
+    console.log(3);
+    return [].reduce.call(arguments, (acc, el) => acc*=el);
+  }
+  
+  const arr = [1,2,3,4]
+  
+  function *gen() {
+    const a = yield sum.bind(null, ...arr);
+    const b = yield prom(a);
+    const c = yield pow.bind(null, ...arr);
+    const d = yield arr;
+    console.log(a + b + c + d)
+    yield a + b + c + d;
+  }
+  
+  runner(gen()).then(data => console.log(data.pop() === '441,2,3,4' ? "Good Job" : "You`ve failed this task"))
